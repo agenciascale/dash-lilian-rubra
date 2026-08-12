@@ -1,7 +1,9 @@
 #requires -Version 5
 <#
   build.ps1 - Dashboard de trafego (SEGUIDORES / VISITAS AO PERFIL) - Lilian Mesquita (conta "Rubra")
-  Fonte 1: Meta Graph API (insights nivel anuncio, por dia) -> midia + VISITAS AO PERFIL (campo results) + follows da API (referencia).
+  Fonte 1: Meta Graph API (insights nivel anuncio, por dia) -> midia + VISITAS AO PERFIL DO INSTAGRAM (campo instagram_profile_visits) + follows da API (referencia).
+  IMPORTANTE: usamos `instagram_profile_visits` (coluna "Visitas ao perfil do Instagram"), NAO `results`/`total_profile_visits`
+  (que e "Visitas ao perfil E A PAGINA" = Resultado, ~5x maior por incluir pagina do FB). Escolha do Leandro: so o perfil do IG.
   Fonte 2: planilha da Lilian (abas mensais) -> coluna "Seguid." (N) = seguidores lancados a mao (numero-verdade).
   Token da Meta vem de $env:META_ACCESS_TOKEN (secret do GitHub Actions / .env local).
 
@@ -55,14 +57,6 @@ $today = ([DateTime]::UtcNow.AddHours(-3)).ToString("yyyy-MM-dd")   # BRT
 
 # ---------------- HELPERS ----------------
 function ToNum($s) { $o = 0.0; [double]::TryParse(("$s"), [Globalization.NumberStyles]::Any, [Globalization.CultureInfo]::InvariantCulture, [ref]$o) | Out-Null; return $o }
-# visitas ao perfil vem no campo "results" (indicador total_profile_visits / profile_visit_view)
-function Get-ResultVal($results) {
-  if (-not $results) { return 0 }
-  foreach ($r in $results) {
-    if ($r.values) { foreach ($v in $r.values) { return [int][double]$v.value } }
-  }
-  return 0
-}
 function JsonStr($items) {
   if (-not $items -or $items.Count -eq 0) { return "[]" }
   $parts = foreach ($it in $items) { $it | ConvertTo-Json -Compress -Depth 6 }
@@ -71,7 +65,7 @@ function JsonStr($items) {
 
 # ---------------- FETCH (Meta Graph API) ----------------
 Write-Host "Buscando insights (nivel ad, por dia) de $START ate $today ..."
-$fields = "campaign_name,adset_name,ad_name,impressions,reach,clicks,inline_link_clicks,spend,results,instagram_profile_follow_v2"
+$fields = "campaign_name,adset_name,ad_name,impressions,reach,clicks,inline_link_clicks,spend,instagram_profile_visits,instagram_profile_follow_v2"
 $tr = '{"since":"' + $START + '","until":"' + $today + '"}'
 $url = "https://graph.facebook.com/$API_VER/$ACCOUNT/insights"
 $qs  = "?level=ad&time_increment=1&limit=500&fields=$fields&time_range=$tr&access_token=$TOKEN"
@@ -99,7 +93,7 @@ foreach ($r in $rows) {
   $spend  = (ToNum $r.spend) * $TAX
   $impr   = [int](ToNum $r.impressions); $reach = [int](ToNum $r.reach)
   $clk    = [int](ToNum $r.inline_link_clicks)        # cliques no LINK (CTR sempre de link)
-  $visits = Get-ResultVal $r.results                  # visitas ao perfil (resultado da campanha)
+  $visits = [int](ToNum $r.instagram_profile_visits)  # visitas ao perfil DO INSTAGRAM (so IG, nao pagina do FB)
   $follows= [int](ToNum $r.instagram_profile_follow_v2) # follows atribuidos pela API (referencia)
   $grain.Add([ordered]@{
     d=$day; camp=$camp; adset=("$($r.adset_name)").Trim(); ad=("$($r.ad_name)").Trim();

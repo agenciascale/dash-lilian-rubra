@@ -341,7 +341,7 @@
     var cpsSt = statusOf(cpf, BANDS.cps);
     var stages = [
       { n: 'Investimento', big: M.money(m.spend), bg: '#8fe01e', ink: '#0c1400', cl: 'com imposto', cv: '×' + taxStr(TAX), sub: 'campanha de seguidores / perfil' },
-      { n: 'Visitas ao perfil', big: M.int(m.visits), bg: '#7ecb1c', ink: '#0c1400', cl: 'Custo / visita', cv: M.money(m.cpVisit), sub: 'resultado da campanha (Meta)' },
+      { n: 'Visitas ao perfil', big: M.int(m.visits), bg: '#7ecb1c', ink: '#0c1400', cl: 'Custo / visita', cv: M.money(m.cpVisit), sub: 'visitas ao perfil do Instagram (Meta)' },
       { n: 'Novos seguidores', big: M.int(total), bg: '#356606', ink: '#fff', cl: 'Custo / seguidor', cv: (total ? M.money(cpf) : '—'), sub: total ? 'visita → seguidor <b>' + M.pct1(convVS) + '</b>' + (cpsSt ? ' · <b class="rep-flag ' + cpsSt.cls + '">' + cpsSt.word + '</b>' : '') : 'sem seguidor lançado no período' }
     ];
     var funnelHTML = stages.map(function (s) {
@@ -382,7 +382,7 @@
     var OP = function (s) { return '<div class="op">' + s + '</div>'; };
     var heroHTML =
       hc('💸 Investimento', 'c/ imposto', M.money(cur.spend), miniDelta(cur.spend, prev && prev.spend, null) + ' vs anterior') + OP('→') +
-      hc('👤 Visitas ao perfil', 'Meta', M.int(cur.visits), 'custo/visita ' + M.money(cur.cpVisit), '', true) + OP('→') +
+      hc('👤 Visitas ao perfil', 'Instagram', M.int(cur.visits), 'custo/visita ' + M.money(cur.cpVisit), '', true) + OP('→') +
       hc('👥 Novos seguidores', 'planilha', M.int(fol.total), fol.total ? 'visita → seguidor ' + M.pct1(fol.convVS) : 'preencher coluna N') + OP('=') +
       hc('🎯 Custo por seguidor', 'bom ≤ R$2', (fol.total ? M.money(cpf) : '—'), '', 'roas');
     var heroLine = fol.total > 0
@@ -461,7 +461,7 @@
       { n: 'Investimento', big: M.money(c.spend), bg: '#8fe01e', ink: '#0c1400', cl: 'Gasto bruto', cv: M.money(c.spend / TAX), sub: '+ imposto ×' + taxStr(TAX) + ' = <b>' + M.money(c.spend) + '</b>' },
       { n: 'Impressões', big: M.int(c.impr), bg: '#7ecb1c', ink: '#0c1400', cl: 'CPM', cv: M.money(c.cpm), sub: 'CTR (link) <b>' + M.pct1(c.ctr) + '</b>' },
       { n: 'Cliques (link)', big: M.int(c.clk), bg: '#5aa60f', ink: '#fff', cl: 'CPC', cv: M.money(c.cpc), sub: 'alcance <b>' + M.int(c.reach) + '</b>' },
-      { n: 'Visitas ao perfil', big: M.int(c.visits), bg: '#356606', ink: '#fff', cl: 'Custo / visita', cv: M.money(c.cpVisit), sub: 'resultado da campanha (Meta)' }
+      { n: 'Visitas ao perfil', big: M.int(c.visits), bg: '#356606', ink: '#fff', cl: 'Custo / visita', cv: M.money(c.cpVisit), sub: 'visitas ao perfil do Instagram (Meta)' }
     ];
     $('funnel').innerHTML = stages.map(function (s) {
       return '<div class="fstage"><div class="fl" style="background:' + s.bg + ';color:' + s.ink + '"><div class="fn">' + s.n + '</div><div class="fv">' + s.big + '</div></div>' +
@@ -518,7 +518,7 @@
     ];
 
     $('trafficView').innerHTML =
-      '<div class="scopenote"><span>🎯 Aba operacional: mídia (Meta) e resultado por anúncio. <b>Visitas ao perfil</b> = resultado da campanha (Meta); os <b>novos seguidores</b> (coluna N da planilha) ficam na Visão Geral. CTR sempre de <b>link</b>.</span></div>' +
+      '<div class="scopenote"><span>🎯 Aba operacional: mídia (Meta) e resultado por anúncio. <b>Visitas ao perfil</b> = <b>visitas ao perfil do Instagram</b> (métrica `instagram_profile_visits`, só o IG — não a "e à Página"); os <b>novos seguidores</b> (coluna N da planilha) ficam na Visão Geral. CTR sempre de <b>link</b>.</span></div>' +
       '<div class="kpis">' + kpis.join('') + '</div>' +
       '<div class="panel"><h2>Comparativo por campanha <span style="font-weight:500;color:var(--ink-3)">— com imposto ×' + taxStr(TAX) + '</span></h2><div class="funil-grid" id="funilInv"></div></div>' +
       '<div class="panel"><h2>Otimização — Campanha › Conjunto › Anúncio</h2>' +
@@ -594,7 +594,7 @@
     var resumoStats = repStat('Investimento', M.money(cur.spend)) + repStat('Visitas ao perfil', int(cur.visits)) +
       repStat('Custo por visita', M.money(cur.cpVisit)) + repStat('Novos seguidores', int(fol.total)) +
       repStat('Custo por seguidor ' + selo('cps', fol.cpf), fol.total ? M.money(fol.cpf) : '—') + repStat('Alcance', int(cur.reach));
-    var resumoNote = 'Campanha de <b>seguidores / visitas ao perfil</b>' + (cgR !== 'all' ? ' — <b>' + esc(GROUP_LABEL[cgR]) + '</b>' : '') + '. <b>Visitas ao perfil</b> = resultado da campanha (Meta) · <b>Novos seguidores</b> = número real da planilha (coluna N), que você atribui à campanha. Custo por seguidor bom ≤ R$2,00.';
+    var resumoNote = 'Campanha de <b>seguidores / visitas ao perfil</b>' + (cgR !== 'all' ? ' — <b>' + esc(GROUP_LABEL[cgR]) + '</b>' : '') + '. <b>Visitas ao perfil</b> = <b>visitas ao perfil do Instagram</b> (só o IG, não a "e à Página") · <b>Novos seguidores</b> = número real da planilha (coluna N), que você atribui à campanha. Custo por seguidor bom ≤ R$2,00.';
 
     var secVisual =
       '<div class="rep-sec"><div class="step">1 · RESUMO</div><h3>📊 Números do período' + (cgR !== 'all' ? ' <span style="font-weight:500;color:var(--ink-3)">— ' + esc(GROUP_LABEL[cgR]) + '</span>' : '') + '</h3><div class="rep-stats">' +
@@ -738,7 +738,7 @@
     $('footer').innerHTML =
       'Gasto total do período completo: ' + money(totalSpend) + ' (já com imposto ×' + taxStr(TAX) + '). ' +
       'Fonte: <b>Meta Graph API</b> (insights nível anúncio) · conta <code>' + esc(m.account || '') + '</code> + planilha da Lilian (seguidores lançados à mão). ' +
-      '<b>Visitas ao perfil</b> = resultado da campanha (' + int(totVis) + ' no total) · <b>Novos seguidores</b> = coluna N · Seguid. (' + int(totFol) + ' no total). ' +
+      '<b>Visitas ao perfil do Instagram</b> = instagram_profile_visits (' + int(totVis) + ' no total) · <b>Novos seguidores</b> = coluna N · Seguid. (' + int(totFol) + ' no total). ' +
       'CTR sempre de <b>link</b>. Somente leitura.';
 
     Array.prototype.forEach.call(document.querySelectorAll('[data-preset]'), function (b) {
