@@ -120,6 +120,58 @@
     return { total: tot, spend: sp, visits: vis, dias: rows.length, cpf: div(sp, tot), convVS: div(tot, vis), rows: rows };
   }
 
+  /* ---------------------------------------------------------------- seguidores AO VIVO (lê a planilha client-side; instantâneo no F5) */
+  var FOL_LIVE = false;   // vira true quando a leitura ao vivo funciona
+  function parseCsvLineJS(line) {
+    var out = [], cur = '', inQ = false;
+    for (var i = 0; i < line.length; i++) {
+      var ch = line[i];
+      if (inQ) { if (ch === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else inQ = false; } else cur += ch; }
+      else if (ch === '"') inQ = true;
+      else if (ch === ',') { out.push(cur); cur = ''; }
+      else cur += ch;
+    }
+    out.push(cur); return out;
+  }
+  function fetchFolTab(gid) {
+    var url = 'https://docs.google.com/spreadsheets/d/' + D.folSheet + '/gviz/tq?tqx=out:csv&gid=' + encodeURIComponent(gid) + '&_=' + Date.now();
+    return fetch(url, { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (txt) {
+      var map = {};
+      txt.split('\n').forEach(function (line) {
+        if (!line.trim()) return;
+        var f = parseCsvLineJS(line); if (f.length < 14) return;
+        var draw = (f[1] || '').trim(), sraw = (f[13] || '').trim();
+        var m = draw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/); if (!m) return;   // DD/MM/YYYY
+        var iso = m[3] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2);   // -> YYYY-MM-DD
+        var sc = sraw.replace(/[^\d-]/g, ''); if (sc === '' || sc === '-') return;
+        var seg = parseInt(sc, 10); if (!(seg > 0)) return;
+        map[iso] = (map[iso] || 0) + seg;
+      });
+      return map;
+    }).catch(function () { return {}; });
+  }
+  function fetchLiveFollowers() {
+    var tabs = arr(D.folTabs);
+    if (!D.folSheet || !tabs.length || typeof fetch !== 'function') return Promise.resolve(null);
+    return Promise.all(tabs.map(fetchFolTab)).then(function (maps) {
+      var all = {}, any = false;
+      maps.forEach(function (mp) { for (var k in mp) { all[k] = (all[k] || 0) + mp[k]; any = true; } });
+      if (!any) return null;
+      return Object.keys(all).sort().map(function (d) { return { d: d, gain: all[d] }; });
+    }).catch(function () { return null; });
+  }
+  function applyLiveFollowers(fol) {
+    if (!fol || !fol.length) return;                 // fetch falhou -> mantém o dado do build (fallback)
+    followersAll = fol; HAS_FOL = true; FOL_LIVE = true;
+    folDates = followersAll.map(function (f) { return f.d; }).filter(Boolean).sort();
+    minDate = folDates.length && folDates[0] < dMin ? folDates[0] : dMin;
+    maxDate = folDates.length && folDates[folDates.length - 1] > dMax ? folDates[folDates.length - 1] : dMax;
+    if ($('from')) { $('from').min = $('to').min = minDate; $('from').max = $('to').max = maxDate; }
+    if (STATE.preset === 'all') { STATE.from = minDate; STATE.to = maxDate; if ($('from')) { $('from').value = minDate; $('to').value = maxDate; } }
+    else { STATE.from = clampD(STATE.from); STATE.to = clampD(STATE.to); }
+    if (daily.length) refresh();
+  }
+
   /* ---------------------------------------------------------------- régua de benchmarks (da conta Rubra) */
   var BANDS = {
     ctr: { label: 'CTR (link)', good: 0.015, mid: 0.01, dir: 'high', fmt: M.pct1, lim: 'bom ≥ 1,5%' },
@@ -336,7 +388,8 @@
   // painel de Seguidores — seguidores lançados à mão na planilha × visitas ao perfil (Graph API)
   function renderFollowers(m, fol) {
     var scopeLbl = STATE.campGroup === 'all' ? '' : ' · ' + esc(GROUP_LABEL[STATE.campGroup]);
-    var head = '<h2>👥 Seguidores <small style="font-weight:500;color:var(--ink-3)">· lançados à mão na planilha (coluna N)' + scopeLbl + '</small></h2>';
+    var liveLbl = FOL_LIVE ? ' <span class="rep-flag g" title="Lido direto da planilha agora — aparece no F5, sem esperar o rebuild">● ao vivo</span>' : '';
+    var head = '<h2>👥 Seguidores <small style="font-weight:500;color:var(--ink-3)">· lançados à mão na planilha (coluna N)' + scopeLbl + '</small>' + liveLbl + '</h2>';
     var total = fol.total, cpf = fol.cpf, convVS = fol.convVS;
     var cpsSt = statusOf(cpf, BANDS.cps);
     var stages = [
@@ -793,4 +846,6 @@
   addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(function () { if (daily.length) refresh(); }, 180); });
   if (!daily.length) { $('overviewView').innerHTML = '<div class="panel"><div class="loading">Sem dados. Rode o build.</div></div>'; }
   else shell();
+  // upgrade: seguidores AO VIVO da planilha (aparece no F5, sem esperar o rebuild de hora em hora)
+  if (daily.length) fetchLiveFollowers().then(applyLiveFollowers);
 })();

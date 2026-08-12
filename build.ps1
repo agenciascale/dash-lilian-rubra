@@ -179,7 +179,8 @@ Write-Host ("  dias com seguidores: {0} | total de seguidores (planilha): {1}" -
 # ---------------- OUTPUT data.js ----------------
 $now = [DateTime]::UtcNow.AddHours(-3)   # BRT
 $meta = [ordered]@{ generatedAt = $now.ToString("yyyy-MM-dd HH:mm"); tz="BRT"; tax=$TAX;
-  client="Lilian Mesquita (Rubra)"; account=$ACCOUNT; start=$START }
+  client="Lilian Mesquita (Rubra)"; account=$ACCOUNT; start=$START;
+  folSheet=$SHEET_ID; folTabs=@([string[]]($monTabs.Keys | Sort-Object)) }
 
 $js = "window.DASH=" + ($meta | ConvertTo-Json -Compress -Depth 4) + ";" + [Environment]::NewLine
 $js += "window.DASH.daily="     + (JsonStr $daily)     + ";" + [Environment]::NewLine
