@@ -406,22 +406,12 @@
     var scopeLbl = STATE.campGroup === 'all' ? '' : ' · ' + esc(GROUP_LABEL[STATE.campGroup]);
     var liveLbl = FOL_LIVE ? ' <span class="rep-flag g" title="Lido direto da planilha agora — aparece no F5, sem esperar o rebuild">● ao vivo</span>' : '';
     var head = '<h2>👥 Seguidores <small style="font-weight:500;color:var(--ink-3)">· lançados à mão na planilha (coluna N)' + scopeLbl + '</small>' + liveLbl + '</h2>';
-    var total = fol.total, cpf = fol.cpf, convVS = fol.convVS;
-    var cpsSt = statusOf(cpf, BANDS.cps);
-    var stages = [
-      { n: 'Investimento', big: M.money(m.spend), bg: '#8fe01e', ink: '#0c1400', cl: 'com imposto', cv: '×' + taxStr(TAX), sub: 'campanha de seguidores / perfil' },
-      { n: 'Visitas ao perfil', big: M.int(m.visits), bg: '#7ecb1c', ink: '#0c1400', cl: 'Custo / visita', cv: M.money(m.cpVisit), sub: 'visitas ao perfil do Instagram (Meta)' },
-      { n: 'Novos seguidores', big: M.int(total), bg: '#356606', ink: '#fff', cl: 'Custo / seguidor', cv: (total ? M.money(cpf) : '—'), sub: total ? 'visita → seguidor <b>' + M.pct1(convVS) + '</b>' + (cpsSt ? ' · <b class="rep-flag ' + cpsSt.cls + '">' + cpsSt.word + '</b>' : '') : 'sem seguidor lançado no período' }
-    ];
-    var funnelHTML = stages.map(function (s) {
-      return '<div class="fstage"><div class="fl" style="background:' + s.bg + ';color:' + s.ink + '"><div class="fn">' + s.n + '</div><div class="fv">' + s.big + '</div></div>' +
-        '<div class="fr"><div class="cl">' + s.cl + '</div><div class="cv">' + s.cv + '</div><div class="fsub">' + s.sub + '</div></div></div>';
-    }).join('');
+    var total = fol.total;
     var chartBlock = total > 0
       ? '<h3 class="qh" style="margin-top:16px">Novos seguidores por dia <small>· barras = seguidores (planilha) · linha = custo/seguidor</small></h3><div id="chFol"></div>'
       : '<div class="alertbar amber" style="margin-top:12px">📝 <b>Nenhum seguidor lançado no período/grupo selecionado.</b> As visitas ao perfil vêm da Meta automaticamente; os <b>novos seguidores</b> você preenche na coluna <b>N (Seguid.)</b> das abas mensais — assim que preencher, o custo por seguidor e a conversão aparecem aqui.</div>';
     var note = '<p class="note" style="margin-top:10px">Os <b>novos seguidores</b> são o número que você lança à mão na planilha (coluna <b>N · Seguid.</b>) — o que você atribui à campanha, não o total da conta (que inclui orgânico). Custo por seguidor bom <b>≤ R$2,00</b>. Investimento, visitas e mídia vêm da Meta.</p>';
-    return '<div class="panel quiz-panel">' + head + '<div class="funnel">' + funnelHTML + '</div>' + chartBlock + note + '</div>';
+    return '<div class="panel quiz-panel">' + head + chartBlock + note + '</div>';
   }
 
   function renderOverview() {
