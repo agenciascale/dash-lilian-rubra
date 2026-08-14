@@ -452,7 +452,7 @@
       '<p class="hero-line" style="margin-bottom:10px">' + heroLine + '</p>' +
       '<div class="panel"><h2>Comparativo por campanha <span style="font-weight:500;color:var(--ink-3)">— com imposto ×' + taxStr(TAX) + '</span></h2><div class="funil-grid" id="funilInv"></div></div>' +
       '<div class="grid-funnel">' +
-      '<div class="panel"><h2>Funil completo</h2><p class="note">Investimento → Impressões → Cliques → Visitas ao perfil. Cada etapa mostra o <b>volume</b> e, à direita, o <b>custo</b> e a <b>taxa de passagem</b>.</p><div class="funnel" id="funnel"></div></div>' +
+      '<div class="panel"><h2>Funil completo</h2><p class="note">Investimento → Impressões → Cliques → Visitas ao perfil → Novos seguidores. Cada etapa mostra o <b>volume</b> e, à direita, o <b>custo</b> e a <b>taxa de passagem</b>.</p><div class="funnel" id="funnel"></div></div>' +
       '<div class="panel"><h2>Resultados por dia</h2><p class="note">Barras = <b>Investimento c/ imposto</b> (esq., R$) · linha = <b>Visitas ao perfil</b> (dir., nº).</p><div class="legend" id="legA"></div><div id="chA"></div>' +
       '<h2 style="margin-top:20px">Cliques × Visitas × Custo/visita</h2><p class="note">Barras = <b>Cliques</b> e <b>Visitas ao perfil</b> (esq., nº) · linha = <b>Custo por visita</b> (dir., R$).</p><div class="legend" id="legB"></div><div id="chB"></div></div>' +
       '</div>' +
@@ -466,7 +466,7 @@
     }
 
     renderFunilInv(from, to);
-    renderFunnel(cur);
+    renderFunnel(cur, fol);
     var rows = dailyRows(from, to), pRows = dailyRows(pFrom, pTo);
     comboChart($('chA'), rows, { bars: [{ key: 'spend', color: 'var(--critical)', name: 'Investimento c/ imposto' }], line: { key: 'visits', color: 'var(--good)', name: 'Visitas ao perfil' }, leftFmt: M.money0, rightFmt: M.int, lineFmt: M.int });
     comboChart($('chB'), rows, { bars: [{ key: 'clk', color: 'var(--series-2)', name: 'Cliques' }, { key: 'visits', color: 'var(--good)', name: 'Visitas ao perfil' }], line: { key: 'cpVisit', color: 'var(--ink-1)', name: 'Custo/visita' }, leftFmt: M.int, rightFmt: M.money0, lineFmt: M.money });
@@ -509,13 +509,18 @@
     cards.push('<div class="finv total"><div class="ftop">Σ Total</div><div class="fmain">' + money0(total) + '</div><div class="fmeta">soma das campanhas · com imposto ×' + taxStr(TAX) + '</div></div>');
     $('funilInv').innerHTML = cards.join('');
   }
-  function renderFunnel(c) {
+  function renderFunnel(c, fol) {
     var stages = [
       { n: 'Investimento', big: M.money(c.spend), bg: '#8fe01e', ink: '#0c1400', cl: 'Gasto bruto', cv: M.money(c.spend / TAX), sub: '+ imposto ×' + taxStr(TAX) + ' = <b>' + M.money(c.spend) + '</b>' },
       { n: 'Impressões', big: M.int(c.impr), bg: '#7ecb1c', ink: '#0c1400', cl: 'CPM', cv: M.money(c.cpm), sub: 'CTR (link) <b>' + M.pct1(c.ctr) + '</b>' },
       { n: 'Cliques (link)', big: M.int(c.clk), bg: '#5aa60f', ink: '#fff', cl: 'CPC', cv: M.money(c.cpc), sub: 'alcance <b>' + M.int(c.reach) + '</b>' },
       { n: 'Visitas ao perfil', big: M.int(c.visits), bg: '#356606', ink: '#fff', cl: 'Custo / visita', cv: M.money(c.cpVisit), sub: 'visitas ao perfil do Instagram (Meta)' }
     ];
+    if (HAS_FOL) {
+      stages.push(fol && fol.total
+        ? { n: 'Novos seguidores', big: M.int(fol.total), bg: '#1e3d05', ink: '#fff', cl: 'Custo / seguidor', cv: M.money(fol.cpf), sub: 'da planilha (coluna N) · visita → seguidor <b>' + M.pct1(fol.convVS) + '</b>' }
+        : { n: 'Novos seguidores', big: '—', bg: '#1e3d05', ink: '#fff', cl: 'Custo / seguidor', cv: '—', sub: 'preencher coluna <b>N · Seguid.</b> na planilha' });
+    }
     $('funnel').innerHTML = stages.map(function (s) {
       return '<div class="fstage"><div class="fl" style="background:' + s.bg + ';color:' + s.ink + '"><div class="fn">' + s.n + '</div><div class="fv">' + s.big + '</div></div>' +
         '<div class="fr"><div class="cl">' + s.cl + '</div><div class="cv">' + s.cv + '</div><div class="fsub">' + s.sub + '</div></div></div>';
@@ -831,7 +836,7 @@
       };
     });
 
-    setPeriod(minDate, maxDate, 'all');
+    setPeriod(firstOfMonth(maxDate), maxDate, 'month');
   }
 
   /* ---------------------------------------------------------------- tema */
