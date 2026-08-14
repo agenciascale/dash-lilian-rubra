@@ -13,6 +13,7 @@
   var daily = arr(D.daily).slice().sort(function (a, b) { return a.d < b.d ? -1 : a.d > b.d ? 1 : 0; });
   var grain = arr(D.grain);
   var followersAll = arr(D.followers);
+  var adLinks = D.adLinks || {};   // ad_name -> link do post no Instagram (do criativo)
   var TAX = D.tax || 1.1385;
 
   /* ---------------------------------------------------------------- formato */
@@ -373,6 +374,21 @@
     }
     return Object.keys(map).map(function (k) { return tderive(map[k]); }).filter(function (a) { return a.spend > 0 || a.visits > 0; });
   }
+  // melhor anúncio do período: menor custo/visita entre os que têm volume (gasto ≥ R$10); desempate por mais visitas
+  function bestAd(from, to) {
+    var ads = adsByName(from, to).filter(function (a) { return a.visits > 0; });
+    if (!ads.length) return null;
+    var strong = ads.filter(function (a) { return a.spend >= 10; });
+    var pool = strong.length ? strong : ads;
+    pool.sort(function (a, b) { return (a.cpVisit - b.cpVisit) || (b.visits - a.visits); });
+    var top = pool[0];
+    return { ad: top, link: adLinks[top.label] || '' };
+  }
+  function adLinkBtn(label, txt) {
+    var url = adLinks[label] || '';
+    if (!url) return '';
+    return '<a class="btn adlink" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + (txt || 'Ver anúncio no Instagram') + ' ↗</a>';
+  }
 
   var TCOLS = [
     { k: 'label', label: 'Campanha › Conjunto › Anúncio' },
@@ -445,8 +461,26 @@
     var showFol = HAS_FOL && (cur.spend > 0 || fol.total > 0);
     var folPanel = showFol ? renderFollowers(cur, fol) : '';
 
+    var ba = bestAd(from, to);
+    var bestAdPanel = ba ? (
+      '<div class="panel bestad"><h2>🏆 Melhor anúncio do período <small style="font-weight:500;color:var(--ink-3)">· menor custo por visita</small></h2>' +
+      '<div class="bestad-row">' +
+        '<div class="bestad-info">' +
+          '<div class="bestad-name">' + esc(ba.ad.label) + '</div>' +
+          '<div class="bestad-stats">' +
+            '<span><b>' + M.int(ba.ad.visits) + '</b> visitas ao perfil</span>' +
+            '<span>custo/visita <b>' + M.money(ba.ad.cpVisit) + '</b></span>' +
+            '<span>CTR <b>' + M.pct1(ba.ad.ctr) + '</b></span>' +
+            '<span><b>' + M.money(ba.ad.spend) + '</b> investidos</span>' +
+          '</div>' +
+        '</div>' +
+        (ba.link ? '<div class="bestad-cta">' + adLinkBtn(ba.ad.label, 'Ver anúncio no Instagram') + '</div>' : '<div class="bestad-cta"><span class="muted" style="font-size:12px;color:var(--ink-3)">link indisponível</span></div>') +
+      '</div></div>'
+    ) : '';
+
     var overview =
       folPanel +
+      bestAdPanel +
       '<div class="panel"><div class="health" id="health">' + healthHTML + '</div></div>' +
       '<div class="hero" id="hero">' + heroHTML + '</div>' +
       '<p class="hero-line" style="margin-bottom:10px">' + heroLine + '</p>' +
@@ -672,7 +706,7 @@
       '<div class="rep-sec"><div class="step">5 · MELHORES ANÚNCIOS</div><h3>🏆 Destaques pra produzir mais</h3>' +
       (function () {
         var b = ads.filter(function (a) { return a.visits > 0; }).sort(function (a, z) { return (a.cpVisit || 1e9) - (z.cpVisit || 1e9); }).slice(0, 6);
-        return b.length ? b.map(function (a) { var res = int(a.visits) + ' visita(s) · custo/visita ' + M.money(a.cpVisit); return '<div class="rep-ad"><div><span class="nm">' + esc(a.label) + '</span> <span class="mt">· ' + res + ' · ' + M.money(a.spend) + ' gastos</span></div><input data-adlink="' + encodeURIComponent(a.label) + '" placeholder="cole o link do anúncio (Instagram)"></div>'; }).join('')
+        return b.length ? b.map(function (a) { var res = int(a.visits) + ' visita(s) · custo/visita ' + M.money(a.cpVisit); var linkPart = adLinks[a.label] ? adLinkBtn(a.label, 'Ver no Instagram') : '<input data-adlink="' + encodeURIComponent(a.label) + '" placeholder="cole o link do anúncio (Instagram)">'; return '<div class="rep-ad"><div><span class="nm">' + esc(a.label) + '</span> <span class="mt">· ' + res + ' · ' + M.money(a.spend) + ' gastos</span></div>' + linkPart + '</div>'; }).join('')
           : '<p class="rep-p muted">Sem visita atribuída a um anúncio específico no período.</p>';
       })() + '</div>';
 

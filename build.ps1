@@ -65,7 +65,7 @@ function JsonStr($items) {
 
 # ---------------- FETCH (Meta Graph API) ----------------
 Write-Host "Buscando insights (nivel ad, por dia) de $START ate $today ..."
-$fields = "campaign_name,adset_name,ad_name,impressions,reach,clicks,inline_link_clicks,spend,instagram_profile_visits,results,instagram_profile_follow_v2"
+$fields = "campaign_name,adset_name,ad_name,ad_id,impressions,reach,clicks,inline_link_clicks,spend,instagram_profile_visits,results,instagram_profile_follow_v2"
 $tr = '{"since":"' + $START + '","until":"' + $today + '"}'
 $url = "https://graph.facebook.com/$API_VER/$ACCOUNT/insights"
 $qs  = "?level=ad&time_increment=1&limit=500&fields=$fields&time_range=$tr&access_token=$TOKEN"
@@ -84,12 +84,15 @@ Write-Host ("  paginas: {0} | linhas ad-dia (brutas): {1}" -f $page, $rows.Count
 # ---------------- AGREGACAO MIDIA ----------------
 $grain = New-Object System.Collections.Generic.List[object]
 $dd = @{}   # date -> agregados do funil
+$adIds = @{}  # ad_name -> ad_id (p/ buscar o link do criativo depois)
 $skipped = 0
 foreach ($r in $rows) {
   $day = ("$($r.date_start)").Trim()
   if ($day -notmatch '^\d{4}-\d{2}-\d{2}$') { continue }
   $camp = ("$($r.campaign_name)").Trim()
   if ($camp -notmatch $INCLUDE_RX) { $skipped++; continue }
+  $adNm = ("$($r.ad_name)").Trim()
+  if ($adNm -and $r.ad_id) { $adIds[$adNm] = "$($r.ad_id)" }
   $spend  = (ToNum $r.spend) * $TAX
   $impr   = [int](ToNum $r.impressions); $reach = [int](ToNum $r.reach)
   $clk    = [int](ToNum $r.inline_link_clicks)        # cliques no LINK (CTR sempre de link)
@@ -180,6 +183,22 @@ $totFol = 0
 foreach ($d in $fdays) { $followers.Add([ordered]@{ d=$d; gain=$fmap[$d] }); $totFol += $fmap[$d] }
 Write-Host ("  dias com seguidores: {0} | total de seguidores (planilha): {1}" -f $followers.Count, $totFol)
 
+# ---------------- LINKS DOS ANUNCIOS (permalink do Instagram do criativo) ----------------
+Write-Host "Buscando link do Instagram de cada anuncio (instagram_permalink_url) ..."
+$adLinks = [ordered]@{}   # ad_name -> https://www.instagram.com/p/...
+foreach ($nm in $adIds.Keys) {
+  $aid = $adIds[$nm]
+  try {
+    $u = "https://graph.facebook.com/$API_VER/$aid`?fields=creative%7Binstagram_permalink_url,effective_object_story_id%7D&access_token=$TOKEN"
+    $cr = Invoke-RestMethod -Uri $u -Method Get
+    $link = ""
+    if ($cr.creative -and $cr.creative.instagram_permalink_url) { $link = "$($cr.creative.instagram_permalink_url)" }
+    elseif ($cr.creative -and $cr.creative.effective_object_story_id) { $link = "https://www.facebook.com/" + ("$($cr.creative.effective_object_story_id)" -replace '_', '/posts/') }
+    if ($link) { $adLinks[$nm] = $link }
+  } catch { }
+}
+Write-Host ("  anuncios com link: {0}/{1}" -f $adLinks.Count, $adIds.Count)
+
 # ---------------- OUTPUT data.js ----------------
 $now = [DateTime]::UtcNow.AddHours(-3)   # BRT
 $meta = [ordered]@{ generatedAt = $now.ToString("yyyy-MM-dd HH:mm"); tz="BRT"; tax=$TAX;
@@ -190,6 +209,8 @@ $js = "window.DASH=" + ($meta | ConvertTo-Json -Compress -Depth 4) + ";" + [Envi
 $js += "window.DASH.daily="     + (JsonStr $daily)     + ";" + [Environment]::NewLine
 $js += "window.DASH.grain="     + (JsonStr $grain)     + ";" + [Environment]::NewLine
 $js += "window.DASH.followers=" + (JsonStr $followers) + ";" + [Environment]::NewLine
+$adLinksJson = if ($adLinks.Count -gt 0) { $adLinks | ConvertTo-Json -Compress -Depth 3 } else { "{}" }
+$js += "window.DASH.adLinks="   + $adLinksJson + ";" + [Environment]::NewLine
 
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 [IO.File]::WriteAllText($OutFile, $js, $utf8NoBom)
