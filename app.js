@@ -528,7 +528,7 @@
     var cards = keys.map(function (k, idx) {
       var o = g[k], share = total ? o.spend / total : 0, col = COLORS[idx % COLORS.length];
       var nice = k.length > 42 ? esc(k.slice(0, 40)) + '…' : esc(k);
-      return '<div class="finv"><div class="fshare">' + pct1(share) + '</div><div class="ftop"><span class="fico" style="background:' + col + '"></span>' + (groupOf(k) === 'edist' ? 'E1-DIST' : 'Antiga') + '</div><div class="fmain" style="color:' + col + '">' + money0(o.spend) + '</div><div class="fmeta" title="' + esc(k) + '">' + nice + '<br>' + int(o.visits) + ' visitas · ' + money(div(o.spend, o.visits) || 0) + '/visita</div></div>';
+      return '<div class="finv"><div class="fshare">' + pct1(share) + '</div><div class="ftop"><span class="fico" style="background:' + col + '"></span>' + (function(){var dm=String(k).match(/(\d{4})-(\d{2})-(\d{2})/);return dm?'E1-DIST · '+dm[3]+'/'+dm[2]:(groupOf(k)==='edist'?'E1-DIST':'Antiga');})() + '</div><div class="fmain" style="color:' + col + '">' + money0(o.spend) + '</div><div class="fmeta" title="' + esc(k) + '">' + nice + '<br>' + int(o.visits) + ' visitas · ' + money(div(o.spend, o.visits) || 0) + '/visita</div></div>';
     });
     cards.push('<div class="finv total"><div class="ftop">Σ Total</div><div class="fmain">' + money0(total) + '</div><div class="fmeta">soma das campanhas · com imposto ×' + taxStr(TAX) + '</div></div>');
     $('funilInv').innerHTML = cards.join('');
@@ -848,7 +848,7 @@
     });
 
     // abas de comparação: Todas / E1-DIST / Antiga
-    try { var cg = localStorage.getItem('rb-campgroup'); if (['all', 'edist', 'old'].indexOf(cg) >= 0) STATE.campGroup = cg; } catch (e) { }
+    STATE.campGroup = 'all';   // so existe E1-DIST agora (campanha antiga removida) — sem abas de comparacao
     Array.prototype.forEach.call(document.querySelectorAll('[data-camp-group]'), function (b) {
       b.setAttribute('aria-selected', b.dataset.campGroup === STATE.campGroup);
       b.onclick = function () {

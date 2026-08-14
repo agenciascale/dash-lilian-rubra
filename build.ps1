@@ -25,10 +25,10 @@ $ErrorActionPreference = "Stop"
 $ACCOUNT   = "act_1490434912872704"   # Lilian Mesquita / conta "Rubra"
 $API_VER   = "v21.0"
 $TAX       = 1.1385                    # imposto Meta Ads
-$START     = "2026-03-01"             # inicio do reporting (1a campanha ~24/03; planilha comeca em Abr)
+$START     = "2026-06-01"             # Instagram NOVO: so a era E1-DIST (03/06 em diante). Dados antigos (camp "Ganho de seguidores" Abr/Mai) descartados a pedido do Leandro.
 
-# INCLUI so campanhas de seguidores/perfil (todas as dela sao dessas; descarta stray futuro)
-$INCLUDE_RX = '(?i)(e1[-\s]?dist|seguidor|perfil|visita)'
+# INCLUI so as campanhas E1-DIST (padrao da agencia). A campanha antiga "Ganho de seguidores" fica de fora (insta velho).
+$INCLUDE_RX = '(?i)e1[-\s]?dist'
 
 # planilha da Lilian (seguidores manuais na coluna "Seguid." = N das abas mensais; M = invest c/ imposto)
 $SHEET_ID   = "1ESPchuMZHmXrDIyl5N8Kzy9i20Et0-9EkDVXe_DhSNs"
@@ -165,6 +165,7 @@ foreach ($gid in $monTabs.Keys) {
     if ($dataRaw -notmatch '^(\d{1,2})/(\d{1,2})/(\d{4})') { continue }
     $dd2 = "{0:D2}" -f [int]$matches[1]; $mm2 = "{0:D2}" -f [int]$matches[2]; $yy = $matches[3]
     $iso = "$yy-$mm2-$dd2"
+    if ($iso -lt $START) { continue }   # descarta seguidores do insta velho (antes da era E1-DIST)
     $segClean = ($segRaw -replace '[^\d\-]', '')
     if ($segClean -eq '' -or $segClean -eq '-') { continue }
     $seg = 0; if (-not [int]::TryParse($segClean, [ref]$seg)) { continue }
