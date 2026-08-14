@@ -781,9 +781,7 @@
 
   /* ================================================================ filtro de grupo (comparativo) */
   function filterBarHTML() {
-    if (groupActive())
-      return '<div class="filterbar">🎯 <b>Grupo: ' + esc(GROUP_LABEL[STATE.campGroup]) + '</b> — os números refletem só essas campanhas. Use as abas acima pra comparar E1-DIST × Antiga.</div>';
-    return '';
+    return '';   // faixa de escopo (jargão interno) removida da versão do cliente
   }
 
   /* ================================================================ shell / roteamento */
@@ -837,7 +835,8 @@
     $('from').onchange = clampDates; $('to').onchange = clampDates;
     $('cmp').onclick = function (e) { STATE.compare = !STATE.compare; e.currentTarget.classList.toggle('on', STATE.compare); e.currentTarget.setAttribute('aria-pressed', STATE.compare); refresh(); };
 
-    try { var tv = localStorage.getItem('rb-tab'); if (['overview', 'traffic', 'report'].indexOf(tv) >= 0) STATE.tab = tv; } catch (e) { }
+    try { var tv = localStorage.getItem('rb-tab'); if (['overview', 'traffic'].indexOf(tv) >= 0) STATE.tab = tv; } catch (e) { }
+    if (STATE.tab === 'report') STATE.tab = 'overview';   // aba Relatório removida da versão do cliente
     Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'), function (b) {
       b.setAttribute('aria-selected', b.dataset.tab === STATE.tab);
       b.onclick = function () {
