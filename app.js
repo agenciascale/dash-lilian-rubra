@@ -41,6 +41,8 @@
   function brDate(ds) { var p = ds.split('-'); return p[2] + '/' + p[1]; }
   function brFull(ds) { var p = ds.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
   function diffDays(a, b) { return Math.round((new Date(b + 'T12:00:00Z') - new Date(a + 'T12:00:00Z')) / 864e5); }
+  // "hoje" real do navegador (data local) -> ISO yyyy-mm-dd
+  function todayISO() { var t = new Date(); var m = t.getMonth() + 1, d = t.getDate(); return t.getFullYear() + '-' + (m < 10 ? '0' + m : m) + '-' + (d < 10 ? '0' + d : d); }
 
   /* ---------------------------------------------------------------- período */
   // range cobre mídia E seguidores manuais (a planilha pode ter dias antes/depois do 1º gasto)
@@ -828,7 +830,8 @@
         if (p === 'today') return setPeriod(maxDate, maxDate, 'today');
         if (p === 'yesterday') { var y = dayAdd(maxDate, -1); return setPeriod(y, y, 'yesterday'); }
         if (p === 'month') return setPeriod(firstOfMonth(maxDate), maxDate, 'month');
-        var n = +p; return setPeriod(dayAdd(maxDate, -(n - 1)), maxDate, p);
+        // padrão Meta ("Últimos N dias"): termina ONTEM (exclui hoje). Ex.: 7 dias c/ hoje=24 => 17..23.
+        var n = +p; var end = dayAdd(todayISO(), -1); return setPeriod(dayAdd(end, -(n - 1)), end, p);
       };
     });
     function clampDates() { var f = $('from').value, t = $('to').value; if (!f || !t) return; if (f > t) { var tmp = f; f = t; t = tmp; } setPeriod(f, t, 'custom'); }
